@@ -11,7 +11,7 @@ using namespace std;
 #pragma comment (lib, "AdvApi32.lib")
 
 DWORD WINAPI threadHandler(LPVOID);
-int have_connect = 0;
+bool have_connect = false;
 int main(int argc, char *argv[])
 {	
 	WSADATA wsa;
@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
 			server.sin_family = AF_INET;
 			server.sin_port = htons(port);*/
 
-			server.sin_addr.s_addr = inet_addr("192.168.56.30");
+			server.sin_addr.s_addr = inet_addr("192.168.56.102");
 			server.sin_family = AF_INET;
 			server.sin_port = htons(5001);
 			//Connect to remote server
@@ -66,13 +66,13 @@ int main(int argc, char *argv[])
 			else
 				start = false;
 		}
-		int flag_croupier = 0;
-		int flag = 0;
+		bool flag_croupier = false;
+		bool flag = true;
 		string mes_to_serv;
 		char user_a;
 		int sleep_time=100;
 
-		while (flag == 0)
+		while (flag)
 		{
 			cout << "Do you want to be a croupier? y/n\n";
 			string answer;
@@ -82,19 +82,20 @@ int main(int argc, char *argv[])
 			if (answer == "y")
 			{
 				mes_to_serv = "1";
-				flag = 1;
-				flag_croupier = 1;
+				flag = false;
+				flag_croupier = true;
 			}
 			else if (answer == "n")
 			{
 				mes_to_serv = "0";
-				flag = 1;
+				flag = false;
 			}
 		}
 		cout << "Enter your name: ";
 		string name;
 		cin >> name;
 		mes_to_serv += name;
+		mes_to_serv += '.';
 		if (send(s, mes_to_serv.c_str(), mes_to_serv.length(), 0) < 0)
 		{
 			puts("Send failed");
@@ -110,15 +111,15 @@ int main(int argc, char *argv[])
 		cout << "Server:  " << server_reply << "\n";
 		std::string buffer(server_reply);
 		if (buffer.find("We already have a croupier.") != string::npos)
-			flag_croupier = 0;
+			flag_croupier = false;
 
-		have_connect = 1;
+		have_connect = true;
 		HANDLE t;
 		t = CreateThread(NULL, 0, threadHandler, (LPVOID)s, 0, NULL);
 
-		if (flag_croupier == 1)
+		if (flag_croupier == true)
 		{
-			while (have_connect == 1)
+			while (have_connect)
 			{
 				cout << "You can:\n";
 				cout << "	1: Disconnect\n";
@@ -126,7 +127,7 @@ int main(int argc, char *argv[])
 				cout << "	3: Start hoaxs\n";
 				cout << "	4: Finish hoaxs\n";
 				cin >> user_a;
-				if (have_connect == 0) break;
+				if (have_connect == false) break;
 				switch (user_a)
 				{
 				case '1':	mes_to_serv = "1";
@@ -134,7 +135,7 @@ int main(int argc, char *argv[])
 							{
 								puts("Send failed\n");
 							};
-							have_connect = 0;
+							have_connect = false;
 							Sleep(sleep_time);
 							break;
 				case '2':	mes_to_serv = "2";
@@ -164,14 +165,14 @@ int main(int argc, char *argv[])
 		}
 		else
 		{
-			while (have_connect == 1)
+			while (have_connect)
 			{
 				cout << "You can:\n";
 				cout << "	1: Disconnect\n";
 				cout << "	2: Watch rates\n";
 				cout << "	3: Make rate\n";
 				cin >> user_a;
-				if (have_connect == 0) break;
+				if (have_connect == false) break;
 				int true_rate = 1;
 				char rate_type;
 				switch (user_a)
@@ -181,7 +182,7 @@ int main(int argc, char *argv[])
 							{
 								puts("Send failed\n");
 							};
-							have_connect = 0;
+							have_connect = false;
 							Sleep(sleep_time);
 							break;
 				case '2':	mes_to_serv = "2";
@@ -231,7 +232,7 @@ DWORD WINAPI threadHandler(LPVOID param){
 	char server_reply[2000];
 	int recv_size;
 	SOCKET s = (SOCKET)param;
-	while (have_connect==1)
+	while (have_connect)
 	{
 		if ((recv_size = recv(s, server_reply, 2000, 0)) == SOCKET_ERROR)
 		{
@@ -243,10 +244,10 @@ DWORD WINAPI threadHandler(LPVOID param){
 		if (mes.find("You disconected") != string::npos)
 		{
 			cout << "Server:  " << mes;
-			have_connect == 0;
+			have_connect = false;
 			return 0;
 		}
-		cout << "Server:  " << server_reply << "\n";
+		cout << "Server:  " << server_reply;
 	}
 	return 0;
 }
